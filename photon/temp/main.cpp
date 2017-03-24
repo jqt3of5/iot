@@ -3,6 +3,7 @@
 
 #include <Particle.h>
 #include <math.h>
+#include "SparkFunMAX17043.h"
 
 #define R1 100000.0
 #define MAX_A 4095.0
@@ -11,21 +12,27 @@
 #define C 0.0000001323120683
 #define SAMPLES 10
 
-double avg_R0 = 0;
-double avg_R1 = 0;
-double avg_R2 = 0;
+double T0 = 0;
+double T1 = 0;
+double T2 = 0;
 
+double state_of_charge = 0;
 void setup()
 {
-  Particle.variable("R0",avg_R0);
-  Particle.variable("R1",avg_R1);
-  Particle.variable("R2",avg_R2);
+  Particle.variable("T0",T0);
+  Particle.variable("T1",T1);
+  Particle.variable("T2",T2);
 
-  pinMode(D0, INPUT_PULLDOWN);
+  Particle.variable("charge", state_of_charge);
+
+  lipo.begin();
+  lipo.quickStart();
 }
 
 void loop()
 {
+  state_of_charge = lipo.getSOC();
+
   double temp_a0 = 0, temp_a1 = 0, temp_a2 = 0;
   for (int i = 0; i < SAMPLES; ++i)
   {
@@ -40,18 +47,17 @@ void loop()
   temp_a2 = temp_a2/SAMPLES;
 
   //Convert the readings from analog values to an actual resistance.
-  avg_R0 = temp_a0*R1/(MAX_A - temp_a0);
-  avg_R1 = temp_a1*R1/(MAX_A - temp_a1);;
-  avg_R2 = temp_a2*R1/(MAX_A - temp_a2);;
+  double avg_R0 = temp_a0*R1/(MAX_A - temp_a0);
+  double avg_R1 = temp_a1*R1/(MAX_A - temp_a1);;
+  double avg_R2 = temp_a2*R1/(MAX_A - temp_a2);;
 
   //Convert the resistance into a tempurature using the precomputed Stienhart-Hart coefficients.
-  double T0 = 1/(A + B*log(avg_R0) + C*log(avg_R0)*log(avg_R0)*log(avg_R0)) - 273.15;
-  double T1 = 1/(A + B*log(avg_R1) + C*log(avg_R1)*log(avg_R1)*log(avg_R1)) - 273.15;
-  double T2 = 1/(A + B*log(avg_R2) + C*log(avg_R2)*log(avg_R2)*log(avg_R2)) - 273.15;
+  T0 = 1/(A + B*log(avg_R0) + C*log(avg_R0)*log(avg_R0)*log(avg_R0)) - 273.15;
+  T1 = 1/(A + B*log(avg_R1) + C*log(avg_R1)*log(avg_R1)*log(avg_R1)) - 273.15;
+  T2 = 1/(A + B*log(avg_R2) + C*log(avg_R2)*log(avg_R2)*log(avg_R2)) - 273.15;
 
   char data[100] = {0};
   sprintf(data, "{\"probeA\":%f, \"probeB\":%f, \"probeC\":%f}", T0, T1, T2);
-  Particle.publish("thingspeak", data, 0, PRIVATE);
-  Particle.publish("firebase", data, 0, PRIVATE);
+  Particle.publish("temp", data, 0, PRIVATE);
   delay(10000);
 }
