@@ -164,3 +164,11 @@ void displayFloat(float value)
   display.write(soc_str[2]);
   display.write(soc_str[3]);
 }
+
+void drawGraph(float [] data, int start, int count)
+{
+  for (int i = 0; i < count; ++i)
+  {
+
+  }
+}

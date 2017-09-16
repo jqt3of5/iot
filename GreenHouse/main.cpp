@@ -20,6 +20,7 @@ All text above, and the splash screen must be included in any redistribution
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "SparkFunMAX17043.h" // Include the SparkFun MAX17043 library
+#include "tempProbe.h"
 
 #include "DHT.h"
 
@@ -58,8 +59,15 @@ Adafruit_SSD1306 display(OLED_RESET);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-double _temp = 0, _humid = 0, _charge = 0;
+int _tempIndex = 0;
+double _tempHistory[100] = {0};
+int _humidIndex = 0;
+double _humidHistory[100] = {0};
+int _chargeIndex = 0;
+double _chargeHistory[100] = {0};
 
+double _temp = 0, _humid = 0, _charge = 0;
+bool _asFarenheit = true;
 void displayFloat(float value);
 
 void setup()   {
@@ -87,17 +95,24 @@ void setup()   {
   Particle.connect();
 }
 
-void loop() {
+void loop()
+{
 
   display.drawCircle(120,6,5,WHITE);
   display.display();
     // Reading temperature or humidity takes about 250 milliseconds!
    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
    _humid = dht.readHumidity();
+   _humidHistory[_humidIndex] = _humid;
+   _humidIndex = (_humidIndex + 1)%100;
+
    delay(2000);
    //float t = dht.readTemperature();
    // Read temperature as Fahrenheit (isFahrenheit = true)
-   _temp = dht.readTemperature(true);
+   _temp = dht.readTemperature(_asFarenheit);
+   _tempHistory[_tempIndex] = _temp;
+   _tempIndex = (_tempIndex + 1)%100;
+
    // Check if any reads failed and exit early (to try again).
    if (isnan(_humid) || isnan(_temp)) {
      Serial.println("Failed to read from DHT sensor!");
@@ -106,6 +121,14 @@ void loop() {
 
    //double voltage = lipo.getVoltage();
 	 _charge = lipo.getSOC();
+   _chargeHistory[_chargeIndex] = _charge;
+   _chargeIndex = (_chargeIndex + 1)%100;
+
+   double probe = readTemp(A1);
+   if (_asFarenheit)
+   {
+     probe = probe * 1.8 + 32;
+   }
 
    // Compute heat index in Fahrenheit (the default)
    //float hif = dht.computeHeatIndex(f, h);
@@ -124,6 +147,9 @@ void loop() {
   displayFloat(_humid);
   display.write('%');
 
+  display.setCursor(64,20);
+  displayFloat(probe);
+
   display.display();
   delay(2000);
 }
@@ -137,4 +163,12 @@ void displayFloat(float value)
   display.write(soc_str[1]);
   display.write(soc_str[2]);
   display.write(soc_str[3]);
+}
+
+void drawGraph(float [] data, int start, int count)
+{
+  for (int i = 0; i < count; ++i)
+  {
+
+  }
 }
