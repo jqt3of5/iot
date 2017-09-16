@@ -1,0 +1,1 @@
+double readTemp(int pin);

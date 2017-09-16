@@ -55,7 +55,7 @@ void loop()
   {
     if (!chargeEventOnce)
     {
-      Particle.publish("low_charge", state_of_charge);
+      Particle.publish("device/charge", state_of_charge);
       chargeEventOnce = true;
     }
   }
@@ -63,7 +63,7 @@ void loop()
   {
     chargeEventOnce = false;
   }
-  
+
 /*  char data[100] = {0};
   sprintf(data, "{\"probeA\":%f, \"probeB\":%f, \"probeC\":%f}", T0, T1, T2);
   Particle.publish("temp", data, 0, PRIVATE);
